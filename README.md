@@ -1,5 +1,32 @@
 # tmux-claude-status
 
+> [!IMPORTANT]
+> **This is the `stable` branch of a fork of [farnots/tmux-claude-status](https://github.com/farnots/tmux-claude-status).**
+> It is the original plugin at commit `0bc82b8` plus one change, in
+> `scripts/claude-status-daemon.sh`.
+
+| | original | this branch |
+|---|---|---|
+| Liveness check, every 5 s | one `ps -p <list of pids>` | `kill -0`, and one `ps -p <pid>` per new pid, cached |
+| CPU per check with 55 Claude panes on macOS | 1.5–2.5 s | about 0.01 s |
+
+> [!NOTE]
+> **Why.** On macOS `ps -p` with a list of pids scans every process on the
+> system, while a single pid is a direct lookup. On a machine with about 2300
+> processes the batched call showed up as a `ps` CPU spike every 5 seconds.
+> Reported upstream as
+> [issue #4](https://github.com/farnots/tmux-claude-status/issues/4), fix
+> proposed in [PR #3](https://github.com/farnots/tmux-claude-status/pull/3).
+> When that is merged this branch is no longer needed.
+
+To use it with [TPM](https://github.com/tmux-plugins/tpm):
+
+    set -g @plugin 'mattiacolombomc/tmux-claude-status#stable'
+
+The rest of this README is the original one.
+
+---
+
 Show the live status of your [Claude Code](https://claude.com/claude-code)
 sessions in tmux: every window gets a badge (status bar and `choose-tree`
 window picker) telling you whether Claude is working, waiting for your
