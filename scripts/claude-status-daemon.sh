@@ -87,8 +87,23 @@ sweep() {
 $panes
 EOF
   pids=${pids#,}
+  # On macOS `ps -p <list>` scans EVERY process (1.5-2.5 s of CPU with ~2300
+  # processes), while `ps -p <single pid>` is a direct lookup (~5 ms). So:
+  # liveness with the kill -0 builtin (no fork), tty looked up once per pid
+  # and cached. The cache is dropped every 60 sweeps to bound PID reuse.
+  sweeps=$(( ${sweeps:-0} + 1 ))
+  [ $((sweeps % 60)) -eq 0 ] && ttycache=""
   alive=""
-  [ -n "$pids" ] && alive=$(ps -o pid=,tt= -p "$pids" 2>/dev/null)
+  oldifs=$IFS; IFS=,
+  for pid in $pids; do
+    kill -0 "$pid" 2>/dev/null || continue
+    line=$(printf '%s\n' "$ttycache" | awk -v p="$pid" '$1==p')
+    [ -n "$line" ] || line=$(ps -o pid=,tt= -p "$pid" 2>/dev/null)
+    [ -n "$line" ] && alive="$alive
+$line"
+  done
+  IFS=$oldifs
+  ttycache=$alive
 
   dead_windows=""
   live_panes=""
